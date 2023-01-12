@@ -51,10 +51,8 @@ float DiscountsPriceByRole(UserCart user)
 int SumWeightProduct(UserCart user)
 {
     int WagaSuma = user.CartProduct[0].Weight;
-    if (user.CartProduct[1] != null)
-        WagaSuma = WagaSuma + user.CartProduct[1].Weight;
-    if (user.CartProduct[1] != null)
-        WagaSuma = WagaSuma + user.CartProduct[2].Weight;
+    if (user.CartProduct[1] != null) WagaSuma = WagaSuma + user.CartProduct[1].Weight;
+    if (user.CartProduct[1] != null) WagaSuma = WagaSuma + user.CartProduct[2].Weight;
     return WagaSuma;
 }
 
@@ -95,21 +93,14 @@ float SumPriceProductWithRule(UserCart user, bool ifExtraPrice = false, int extr
             Console.WriteLine("Cena produktów po zniznkach liczonych od wielkosci zamowienia " + priceSum);
             DiscountsPriceByRole(user);
             Console.WriteLine("Cena produktów po znizkach ze wzgledu na role " + priceSum);
-            if (ifProductWeightMatters)
-            {
-                ProductWeightMatters(user);
-            }
+            if (ifProductWeightMatters) ProductWeightMatters(user);
             Console.WriteLine("Cena produktów po wpływie wagi " + priceSum);
-            if (ifExtraPrice)
-            {
-                priceSum += extraPriceMeter;
-            }
+            if (ifExtraPrice) priceSum += extraPriceMeter;
             Console.WriteLine("Cena produktów po doliczeniu dopłaty " + priceSum);
             if (ifMargin)
             {
                 priceSum += priceMargin;
-                if (priceMargin > 100)
-                    Console.WriteLine("Brawo, podwyżka się należy!");
+                if (priceMargin > 100) Console.WriteLine("Brawo, podwyżka się należy!");
             }
             Console.WriteLine("Cena produktów końcowa " + priceSum);
             return priceSum;
