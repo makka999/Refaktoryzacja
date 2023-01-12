@@ -1,169 +1,124 @@
-﻿
-Product p1 = new Product();
-p1.Na = "Fasola";
-p1.sCtegoria = "Warzywo";
-p1.Price = 20.123f;
-p1.Waga = 10;
+﻿using io2;
+using System.Diagnostics;
+using System.Xml.Linq;
 
-Product p2 = new Product();
-p2.Na = "Banan";
-p2.sCtegoria = "Owoc";
-p2.Price = 20.99f;
-p2.Waga = 20;
+float priceSum;
 
-float priceSum = Sum(p1, p2);
+Product fasola = new();
+fasola.Name = "Fasola";
+fasola.Category = "Warzywo";
+fasola.Price = 20.123f;
+fasola.Weight = 10;
 
-bool czyP1JestOwocem = p1.sCtegoria == "Owoc";
-bool czyCenaJestWiększaOd10000 = priceSum > 1000;
-//bool czyOwoceSąTakieSame = p1 == p2; Nie działałało, więc porównam wszytkiepola
-bool czyOwoceSąTakieSame =
-    (p1.Na == p2.Na)
-    && (p2.sCtegoria == p1.sCtegoria)
-    && (p1.Waga == p2.Waga);
+Product banan = new();
+banan.Name = "Banan";
+banan.Category = "Owoc";
+banan.Price = 20.99f;
+banan.Weight = 20;
 
-Product[] productArray = new Product[2];
-productArray[0] = p1;
-productArray[1] = p2;   
+Product kiwi = new();
+kiwi.Name = "Kiwi";
+kiwi.Category = "Owoc";
+kiwi.Price = 123;
+kiwi.Weight = 10;
 
-float Sum(Product p, Product p2)
+UserCart FranekKaczakCart = new();
+FranekKaczakCart.FirstName = "Framek";
+FranekKaczakCart.LastName = "Kączak";
+FranekKaczakCart.CartProduct[0] = fasola;
+FranekKaczakCart.CartProduct[1] = banan;
+FranekKaczakCart.CartProduct[2] = kiwi;
+
+SumPriceProductWithRule(FranekKaczakCart);
+SumPriceProductWithRule(FranekKaczakCart, true, 200, true, 123, true);
+SumPriceProductWithRule(FranekKaczakCart, true, 200, true, 123, false);
+
+float DiscountsPriceByPriceSum()
 {
-    return p.Price+ p2.Price;
+    if (priceSum > 5000) priceSum = (float)(0.7f * priceSum); 
+    if (priceSum > 1000) priceSum = (float)(0.8f * priceSum); 
+    if (priceSum > 500) priceSum = (float)(0.85f * priceSum);
+    if (priceSum > 100) priceSum = (float)(0.9f * priceSum);
+    return priceSum;
 }
 
-U user1 = new U();
-user1.FirstName = "Framek";
-user1.LastName = "Kączak";
-user1.products[0] = p1;
-user1.products[1] = p2;
-user1.products[2] = new Product();
-user1.products[2].Na = "Kiwi";
-user1.products[2].sCtegoria = "Owoc";
-user1.products[2].Price = 123;
-user1.products[2].Waga = 10;
+float DiscountsPriceByRole(UserCart user)
+{
+    if ((user.Rola == "VIP") || (user.Rola == "Admin")) priceSum = (int)(0.9f * priceSum);
+    return priceSum;
+}
 
-float sumaCenyProduktówDlaUsera = LiczSumeProduktówZKoszyka(user1);
-float sumaCenyProduktówDlaUsera1 = LiczSumeProduktówZKoszyka(user1, true, 200, true, 123, true);
-float sumaCenyProduktówDlaUsera2 = LiczSumeProduktówZKoszyka(user1, true, 200, true, 123, false);
+int SumWeightProduct(UserCart user)
+{
+    int WagaSuma = user.CartProduct[0].Weight;
+    if (user.CartProduct[1] != null)
+        WagaSuma = WagaSuma + user.CartProduct[1].Weight;
+    if (user.CartProduct[1] != null)
+        WagaSuma = WagaSuma + user.CartProduct[2].Weight;
+    return WagaSuma;
+}
 
-float LiczSumeProduktówZKoszyka(U user, bool czyDoliczyćDodatkoweKoszty = false, int DodatkoweKoszty = 0, 
-    bool czyDoliczyćMarże = false, int Marża = 0, bool czyWagaProduktówMaZnaczenieNaCene = true)
+bool SameCategory(UserCart user, string categoty)
+{
+    return (user.CartProduct[0].Category.ToLower() == categoty.ToLower())
+        && (user.CartProduct[1] == null || (user.CartProduct[1] != null
+        && user.CartProduct[1].Category.ToLower() == categoty))
+        && (user.CartProduct[2] == null || (user.CartProduct[2] != null
+        && user.CartProduct[2].Category.ToLower() == categoty.ToLower()));
+}
+
+float ProductWeightMatters(UserCart user)
+{
+    if ((SumWeightProduct(user) > 1000) && (SameCategory(user, "Owoc"))) priceSum += 45;
+    if ((SumWeightProduct(user) > 1000) && (SameCategory(user, "Warzywo"))) priceSum += 35;
+    if (SumWeightProduct(user) > 1000) priceSum += 25; 
+    if (SumWeightProduct(user) > 500) priceSum += 15;
+    if (SumWeightProduct(user) > 100) priceSum += 10;
+    if (SumWeightProduct(user) > 50) priceSum += 5;
+    if (SumWeightProduct(user) > 15) priceSum += 2;
+    return priceSum;
+}
+
+float SumPriceProductWithRule(UserCart user, bool ifExtraPrice = false, int extraPriceMeter = 0, bool ifMargin = false, int priceMargin = 0, bool ifProductWeightMatters = true)
 {
     if (user != null)
     {
-        if (user.products[0] == null)
-            return 0;
+        if (user.CartProduct[0] == null) return 0;
         else
         {
-            float priceSum = user.products[0].Price;
-            if (user.products[1] != null)
-                priceSum = Sum(user.products[0], user.products[1]);
-            if (user.products[1] != null)
-                priceSum = priceSum + Sum(user.products[1], user.products[2]);
-
-            if ((user.products[0].Price - priceSum) < float.Epsilon)
-                priceSum = float.Epsilon;
-
-            Console.WriteLine("Cena produktów #1 " + priceSum);
-
-            // zniżki 
-            if 
-                (priceSum > 5000) priceSum = (float)(0.7f * priceSum); // dla wiekszych od 5000 30%
-            else 
-            if (priceSum > 1000)
-                priceSum = (float)(0.8f * priceSum); // dla wiekszych od 5000 20%
-            else 
-            if (priceSum > 500)
-                priceSum = (float)(0.85f * priceSum); // dla wiekszych od 5000 15%
-            else 
-            if (priceSum > 100)
-                priceSum = (float)(0.9f * priceSum); // dla wiekszych od 5000 10%
-
-            Console.WriteLine("Cena produktów #2 " + priceSum);
-
-            if ((user.Rola == "VIP") || (user.Rola == "Admin")) // dodatkowa zniżka dla adminów lub VIP
-                priceSum = (int)(0.9f * priceSum);
-
-            Console.WriteLine("Cena produktów #3 " + priceSum);
-
-            int WagaSuma = user.products[0].Waga;
-            if (user.products[1] != null)
-                WagaSuma = WagaSuma + user.products[1].Waga;
-            if (user.products[1] != null)
-                WagaSuma = WagaSuma + user.products[2].Waga;
-
-            Console.WriteLine("Cena produktów #4 " + priceSum);
-
-            if (czyWagaProduktówMaZnaczenieNaCene)
+            priceSum = user.CartProduct[0].Price;
+            if (user.CartProduct[1] != null) priceSum = user.CartProduct[0].Price + user.CartProduct[1].Price;
+            if (user.CartProduct[1] != null) priceSum = priceSum + user.CartProduct[1].Price + user.CartProduct[2].Price;
+            if ((user.CartProduct[0].Price - priceSum) < float.Epsilon) priceSum = float.Epsilon;
+            Console.WriteLine("Cena produktów:" + priceSum);
+            DiscountsPriceByPriceSum();
+            Console.WriteLine("Cena produktów po zniznkach liczonych od wielkosci zamowienia " + priceSum);
+            DiscountsPriceByRole(user);
+            Console.WriteLine("Cena produktów po znizkach ze wzgledu na role " + priceSum);
+            if (ifProductWeightMatters)
             {
-                // Dodatkowe cany dla większej wagi jeżeli tru dla znaczenie ceny na wagę
-                if ((WagaSuma > 1000) 
-                    && (user.products[0].sCtegoria.ToLower() == "Owoc".ToLower()) 
-                    && (user.products[1] == null || (user.products[1] != null 
-                        && user.products[1].sCtegoria.ToLower() == "Owoc"))
-                    && (user.products[2] == null || (user.products[2] != null && user.products[2].sCtegoria.ToLower() == "Owoc".ToLower()))
-                    )
-                    priceSum += 45; // jeżeli to są tylko owoce to 45 dodatkowo,
-                else 
-                if ((WagaSuma > 1000)
-                    && (user.products[0].sCtegoria.ToLower() == "Wrzywo".ToLower())
-                    && (user.products[1] == null || (user.products[1] != null && user.products[1].sCtegoria.ToLower() == "Wrzywo"))
-                    && (user.products[2] == null || (user.products[2] != null && user.products[2].sCtegoria.ToLower() == "Wrzywo".ToLower()))
-                    )
-                    priceSum += 35; // jeżeli to są tylko warzywa to 35 dodatkowo,
-                else 
-                if (WagaSuma > 1000)
-                    priceSum += 25; // jeżeli to są tylko warzywa to 20 dodatkowo,
-                else 
-                if (WagaSuma > 500)
-                    priceSum += 15;
-                else 
-                if (WagaSuma > 100)
-                    priceSum += 10;
-                else 
-                if (WagaSuma > 50)
-                    priceSum += 5;
-                else 
-                if (WagaSuma > 15)
-                    priceSum += 2;
-
-                Console.WriteLine("Cena produktów #5 " + priceSum);
+                ProductWeightMatters(user);
             }
-
-            if (czyDoliczyćDodatkoweKoszty)
+            Console.WriteLine("Cena produktów po wpływie wagi " + priceSum);
+            if (ifExtraPrice)
             {
-                priceSum += DodatkoweKoszty;
+                priceSum += extraPriceMeter;
             }
-            Console.WriteLine("Cena produktów #6 " + priceSum);
-
-            if (czyDoliczyćMarże)
+            Console.WriteLine("Cena produktów po doliczeniu dopłaty " + priceSum);
+            if (ifMargin)
             {
-                priceSum += Marża;
-                if (Marża > 100)
+                priceSum += priceMargin;
+                if (priceMargin > 100)
                     Console.WriteLine("Brawo, podwyżka się należy!");
             }
-            Console.WriteLine("Cena produktów #7 " + priceSum);
-
+            Console.WriteLine("Cena produktów końcowa " + priceSum);
             return priceSum;
         }
     }
-    else
-        return 0;
+    else return 0;
 }
 
-class Product
-{
-    public string Na; // Nazwa
-    public string sCtegoria; // Kategoria - Warzywo lub Owoc (resztę nie ogarniamy)
-    public float Price; // Cena
-    public int Waga; // Waga
-}
 
-class U
-{
-    public string FirstName;
-    public string LastName;
-    public string Email;
-    public string Rola; // Admin, Normalny, VIP oraz Janek (ten z OwoceMorza.pl)
-    public Product[] products = new Product[3]; // User może miec tylko 3 produkty, takie ustalenia z biznesem.
-}
+
+
 
